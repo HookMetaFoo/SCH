@@ -21,7 +21,7 @@ circle.Transparency = 1
 circle.Radius = fov
 circle.Filled = false
 circle.Thickness = 2
-circle.Position = UserInputService:GetMouseLocation()
+circle.Position = nil
 circle.Visible = true
 
 -- ESP Functions
@@ -37,14 +37,6 @@ local function createBox(color)
 	box.Thickness = 2
 	box.Transparency = 1
 	return box
-end
-
-local function updateBox(player)
-	if currentPlayers[player] and currentPlayers[player].color then
-		currentPlayers[player].box.Color = currentPlayers[player].color
-	else
-		currentPlayers[player].box.Color = currentPlayers[player].Team.TeamColor
-	end
 end
 
 local function updateBoxes(box, distanceY, root2d)
@@ -201,7 +193,6 @@ local Toggle = Tab2:CreateToggle({
 										math.huge
 									)
 									updateBoxes(table.box, distanceY, root2d)
-									updateBox(player)
 								else
 									table.box.Visible = false
 								end
@@ -227,19 +218,7 @@ local Toggle = Tab2:CreateToggle({
 	CurrentValue = false,
 	Flag = "ESP2",
 	Callback = function(Value)
-		if Value then
-			for i, v in currentPlayers do
-				if i.Character and i.Character.Torso then
-					if i.Character.Torso:FindFirstChild("FlagJoint") then
-						currentPlayers[i].color = Color3.new(1.000000, 0.000000, 0.917647)
-					end
-				end
-			end
-		else
-			if currentPlayers[i] and currentPlayers[i].color then
-				currentPlayers[i].color = nil
-			end
-		end
+		
 	end,
 })
 
