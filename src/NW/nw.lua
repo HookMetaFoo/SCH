@@ -21,6 +21,7 @@ circle.Transparency = 1
 circle.Radius = fov
 circle.Filled = false
 circle.Thickness = 2
+circle.Position = Vector2.new(0,0)
 circle.Visible = true
 
 -- ESP Functions
@@ -201,10 +202,10 @@ local Toggle = Tab2:CreateToggle({
 				end
 			end)
 		else
-			for _, v in Players:GetPlayers() do
-				if currentPlayers[v] then
-					currentPlayers[v].box:Remove()
-					currentPlayers[v] = nil
+			for i, v in currentPlayers do
+				if currentPlayers[i] then
+					currentPlayers[i].box:Remove()
+					currentPlayers[i] = nil
 				end
 			end
 		end
@@ -229,14 +230,11 @@ for i, v in getgc(true) do
 	if typeof(v) == "function" then
 		if debug.getinfo(v).name == "dealShot" then
 			dealShot = v
-		end
-		if debug.getinfo(v).name == "hitTarget" then
+		elseif debug.getinfo(v).name == "hitTarget" then
 			hitTarget = v
-		end
-		if debug.getinfo(v).name == "createFirearmImpact" then
+		elseif debug.getinfo(v).name == "createFirearmImpact" then
 			createFirearmImpact = v
-		end
-		if debug.getinfo(v).name == "projectileLanded" then
+		elseif debug.getinfo(v).name == "projectileLanded" then
 			projectileLanded = v
 		end
 	end
