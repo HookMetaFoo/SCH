@@ -21,7 +21,6 @@ circle.Transparency = 1
 circle.Radius = fov
 circle.Filled = false
 circle.Thickness = 2
-circle.Position = nil
 circle.Visible = true
 
 -- ESP Functions
@@ -93,9 +92,9 @@ end
 -- GUI
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 local Window = Rayfield:CreateWindow({
-	Name = "Tobayas Client V2",
+	Name = "Old Guard Client",
 	Icon = 0,
-	LoadingTitle = "Tobayas Client V2",
+	LoadingTitle = "Old Guard Client",
 	LoadingSubtitle = "",
 	Theme = "DarkBlue",
 	DisableRayfieldPrompts = false,
