@@ -218,12 +218,57 @@ local Toggle = Tab2:CreateToggle({
 	end,
 })
 
+local flags = {}
 -- Highlight Flagbearer Toggle
 local Toggle = Tab2:CreateToggle({
 	Name = "Highlight Flagbearer",
 	CurrentValue = false,
 	Flag = "ESP2",
-	Callback = function(Value) end,
+	Callback = function(Value) 
+		if Value then
+			-- Find the flags and highlight the players holding them
+			for i,v in currentPlayers do
+				local character = i.Character
+				if character then
+					flags[i] = character.Torso:FindFirstChild("FlagJoint")
+					if flags[i] then
+						v.flagbearer = true
+						v.box.Color = Color3.new(1.000000, 0.000000, 0.784314)
+					end
+				end
+			end
+			-- Detect and update if the flag's parent (player) changes
+			task.spawn(function()
+				while true do
+					task.wait()
+					for i,v in flags do
+						if flags[i] then
+							flags[i].AncestryChanged:Connect(function(inst,p)
+								for i,v in flags do
+									if flags[i] == v then
+										local torso = inst.Parent
+										if torso then
+											local character = torso.Parent
+											if character then
+												-- create a new pair
+												local player = Players:GetPlayerFromCharacter(character)
+												if player then
+													flags[player] = inst
+													flags[i] = nil
+													currentPlayers[i].flagbearer = false
+													currentPlayers[i].box.Color = currentPlayers[i].TeamColor.Color
+												end
+											end
+										end
+									end
+								end
+							end)
+						end
+					end
+				end
+			end)
+		end
+	end,
 })
 
 -- Aimbot Functionality
