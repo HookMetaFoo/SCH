@@ -56,6 +56,19 @@ local function addPlayer(player)
 	end
 end
 
+-- Add each player to the currentPlayers table
+for _, v in Players:GetPlayers() do
+	if v == localPlayer or v.Team == localPlayer.Team then
+		continue
+	end
+	addPlayer(v)
+end
+
+-- If player has joined, add them to the table
+Players.PlayerAdded:Connect(function(player)
+	addPlayer(player)
+end)
+
 -- Remove the box and set the player to nil if the player has left the game
 Players.PlayerRemoving:Connect(function(player)
 	if currentPlayers[player] then
@@ -106,7 +119,7 @@ local Window = Rayfield:CreateWindow({
 local Tab1 = Window:CreateTab("Aimbot", "rewind")
 local Tab2 = Window:CreateTab("ESP", "rewind")
 
-local isAimbotActive = false -- Track if the aimbot is active
+local isAimbotActive = false
 
 -- Aimbot Toggle
 local Toggle = Tab1:CreateToggle({
@@ -118,7 +131,7 @@ local Toggle = Tab1:CreateToggle({
 			if not isAimbotActive then
 				isAimbotActive = true
 				spawn(function()
-					while isAimbotActive do -- Continue while the aimbot is active
+					while isAimbotActive do 
 						task.wait()
 						if UserInputService:IsKeyDown(Enum.KeyCode.J) then
 							local target = getTarget()
@@ -160,19 +173,6 @@ local Toggle = Tab2:CreateToggle({
 	Flag = "ESP1",
 	Callback = function(Value)
 		if Value then
-			-- Add each player to the currentPlayers table
-			for _, v in Players:GetPlayers() do
-				if v == localPlayer or v.Team == localPlayer.Team then
-					continue
-				end
-				addPlayer(v)
-			end
-
-			-- If player has joined, add them to the table
-			Players.PlayerAdded:Connect(function(player)
-				addPlayer(player)
-			end)
-
 			-- ESP Loop
 			RunService.RenderStepped:Connect(function()
 				circle.Position = UserInputService:GetMouseLocation()
@@ -204,8 +204,7 @@ local Toggle = Tab2:CreateToggle({
 		else
 			for i, v in currentPlayers do
 				if currentPlayers[i] then
-					currentPlayers[i].box:Remove()
-					currentPlayers[i] = nil
+					currentPlayers[i].box.Visible = false
 				end
 			end
 		end
