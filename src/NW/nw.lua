@@ -13,6 +13,7 @@ local localPlayer = Players.LocalPlayer
 local currentPlayers = {}
 local fov = 100
 local mouse = localPlayer:GetMouse()
+local espConnection = nil
 
 -- Circles
 local circle = Drawing.new("Circle")
@@ -52,6 +53,7 @@ local function addPlayer(player)
 	if not currentPlayers[player] and player.Team ~= localPlayer.Team then
 		currentPlayers[player] = {
 			box = createBox(player.TeamColor.Color),
+			flagbearer = false
 		}
 	end
 end
@@ -166,7 +168,6 @@ local Toggle = Tab1:CreateToggle({
 	Callback = function(Value) end,
 })
 
-local espConnection = nil
 -- ESP Toggle
 local Toggle = Tab2:CreateToggle({
 	Name = "Enable ESP",
@@ -176,9 +177,7 @@ local Toggle = Tab2:CreateToggle({
 		if Value then
 			-- ESP Loop
 			espConnection = RunService.RenderStepped:Connect(function()
-				if not espActive then return end
 				circle.Position = UserInputService:GetMouseLocation()
-
 				for player, table in currentPlayers do
 					if player then
 						if player.Character then
