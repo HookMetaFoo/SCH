@@ -219,44 +219,52 @@ local Toggle = Tab2:CreateToggle({
 })
 
 local flags = {}
--- Highlight Flagbearer Toggle
 local Toggle = Tab2:CreateToggle({
 	Name = "Highlight Flagbearer",
 	CurrentValue = false,
 	Flag = "ESP2",
-	Callback = function(Value) 
+	Callback = function(Value)
 		if Value then
 			-- Find the flags and highlight the players holding them
-			for i,v in currentPlayers do
-				local character = i.Character
+			for player, data in currentPlayers do
+				local character = player.Character
 				if character then
-					flags[i] = character.Torso:FindFirstChild("FlagJoint")
-					if flags[i] then
-						v.flagbearer = true
-						v.box.Color = Color3.new(1.000000, 0.000000, 0.784314)
+					local torso = character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
+					if torso then
+						local flagJoint = torso:FindFirstChild("FlagJoint")
+						if flagJoint then
+							flags[player] = flagJoint
+							data.flagbearer = true
+							data.box.Color = Color3.new(1, 0, 0.784)
+						end
 					end
 				end
 			end
+
 			-- Detect and update if the flag's parent (player) changes
 			task.spawn(function()
-				while true do
-					task.wait()
-					for i,v in flags do
-						if flags[i] then
-							flags[i].AncestryChanged:Connect(function(inst,p)
-								for i,v in flags do
-									if flags[i] == v then
-										local torso = inst.Parent
-										if torso then
-											local character = torso.Parent
-											if character then
-												-- create a new pair
-												local player = Players:GetPlayerFromCharacter(character)
-												if player then
-													flags[player] = inst
-													flags[i] = nil
-													currentPlayers[i].flagbearer = false
-													currentPlayers[i].box.Color = currentPlayers[i].TeamColor.Color
+				while Value do
+					task.wait(1)
+					for player, flagJoint in flags do
+						if flagJoint then
+							flagJoint.AncestryChanged:Connect(function(flagjoint, par)
+								if par.Name ~= "Torso" then
+									flags[player] = nil
+									if currentPlayers[player] then
+										currentPlayers[player].flagbearer = false
+										currentPlayers[player].box.Color = player.TeamColor.Color
+									end
+								else
+									for player, data in currentPlayers do
+										local character = player.Character
+										if character then
+											local torso = character:FindFirstChild("Torso")
+											if torso then
+												local flagJoint = torso:FindFirstChild("FlagJoint")
+												if flagJoint then
+													flags[player] = flagJoint
+													data.flagbearer = true
+													data.box.Color = Color3.new(1, 0, 0.784)
 												end
 											end
 										end
@@ -267,6 +275,17 @@ local Toggle = Tab2:CreateToggle({
 					end
 				end
 			end)
+		else
+			-- Turn off highlighting and reset all changes
+			for player, flagJoint in pairs(flags) do
+				print(player.Name)
+				if currentPlayers[player] then
+					print(currentPlayers[player])
+					currentPlayers[player].flagbearer = false
+					currentPlayers[player].box.Color = player.TeamColor.Color
+				end
+			end
+			flags = {}
 		end
 	end,
 })
@@ -366,7 +385,8 @@ for i, v in getgc(true) do
 	end
 end
 
--- Aimbot Indicator Toggle
+-- STILL WIP
+-- Silent Aim
 local Toggle = Tab1:CreateToggle({
 	Name = "Enable Silent Aim",
 	CurrentValue = false,
