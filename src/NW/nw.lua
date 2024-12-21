@@ -22,7 +22,7 @@ circle.Transparency = 1
 circle.Radius = fov
 circle.Filled = false
 circle.Thickness = 2
-circle.Position = Vector2.new(0,0)
+circle.Position = Vector2.new(0, 0)
 circle.Visible = true
 
 -- ESP Functions
@@ -53,7 +53,7 @@ local function addPlayer(player)
 	if not currentPlayers[player] and player.Team ~= localPlayer.Team then
 		currentPlayers[player] = {
 			box = createBox(player.TeamColor.Color),
-			flagbearer = false
+			flagbearer = false,
 		}
 	end
 end
@@ -133,7 +133,7 @@ local Toggle = Tab1:CreateToggle({
 			if not isAimbotActive then
 				isAimbotActive = true
 				spawn(function()
-					while isAimbotActive do 
+					while isAimbotActive do
 						task.wait()
 						if UserInputService:IsKeyDown(Enum.KeyCode.J) then
 							local target = getTarget()
@@ -204,11 +204,11 @@ local Toggle = Tab2:CreateToggle({
 				end
 			end)
 		else
-            if espConnection then
-                espConnection:Disconnect()
-                espConnection = nil
-            end
-            
+			if espConnection then
+				espConnection:Disconnect()
+				espConnection = nil
+			end
+
 			for i, v in currentPlayers do
 				if currentPlayers[i] then
 					currentPlayers[i].box.Visible = false
@@ -223,9 +223,7 @@ local Toggle = Tab2:CreateToggle({
 	Name = "Highlight Flagbearer",
 	CurrentValue = false,
 	Flag = "ESP2",
-	Callback = function(Value)
-		
-	end,
+	Callback = function(Value) end,
 })
 
 -- Aimbot Functionality
@@ -329,70 +327,79 @@ local Toggle = Tab1:CreateToggle({
 	CurrentValue = false,
 	Flag = "Aimbot3",
 	Callback = function(Value)
-		for i, v in getgc(true) do
-			if typeof(v) == "function" then
-				if debug.getinfo(v).name == "simulateFirearmProjectile" then
-					local old
-					old = hookfunction(
-						v,
-						newcclosure(function(bullet, deltaTime, gravity)
-							local originPosition = bullet.position
-							local direction = (mouse.Hit.Position - originPosition).Unit
-							local destinationVector = direction
-							local raycastParams = RaycastParams.new()
-							if bullet.isLocal then
-								local localPlayerHit = 4
-								local localIgnoredCharacters = {}
-								table.clear(localIgnoredCharacters)
-								table.insert(localIgnoredCharacters, localPlayer.Character)
-		
-								while true do
-									raycastParams.FilterDescendantsInstances = localIgnoredCharacters
-									localPlayerHit = localPlayerHit - 1
-									
-									local raycastResult = workspace:Raycast(originPosition, destinationVector * 10000, raycastParams)
-									if raycastResult then
-										local hitInstance = ptarget
-										local character = ptarget.Parent
-										local humanoid = character:FindFirstChild("Humanoid")
-		
-										if humanoid and isLocked then
-											local playerHit = Players:GetPlayerFromCharacter(character)
-		
-											if not playerHit then
+		if Value then
+			for i, v in getgc(true) do
+				if typeof(v) == "function" then
+					if debug.getinfo(v).name == "simulateFirearmProjectile" then
+						local old
+						old = hookfunction(
+							v,
+							newcclosure(function(bullet, deltaTime, gravity)
+								local originPosition = bullet.position
+								local direction = (mouse.Hit.Position - originPosition).Unit
+								local destinationVector = direction
+								local raycastParams = RaycastParams.new()
+								if bullet.isLocal then
+									local localPlayerHit = 4
+									local localIgnoredCharacters = {}
+									table.clear(localIgnoredCharacters)
+									table.insert(localIgnoredCharacters, localPlayer.Character)
+
+									while true do
+										raycastParams.FilterDescendantsInstances = localIgnoredCharacters
+										localPlayerHit = localPlayerHit - 1
+
+										local raycastResult =
+											workspace:Raycast(originPosition, destinationVector * 10000, raycastParams)
+										if raycastResult then
+											local hitInstance = ptarget
+											local character = ptarget.Parent
+											local humanoid = character:FindFirstChild("Humanoid")
+
+											if humanoid and isLocked then
+												local playerHit = Players:GetPlayerFromCharacter(character)
+
+												if not playerHit then
+													return true
+												elseif playerHit.Team == localPlayer.Team then
+													table.insert(localIgnoredCharacters, character)
+												else
+													local hitPlayerObj = playerHit
+													local hitHumanoidObj = humanoid
+													local hitInstanceObj = hitInstance
+													print(hitHumanoidObj)
+													local hitPosition = ptarget.Position
+													local isNonFatal = false
+
+													dealShot(
+														hitPlayerObj,
+														hitHumanoidObj,
+														hitInstanceObj,
+														hitPosition,
+														isNonFatal
+													)
+													return true
+												end
+											elseif character.Name == "TargetModel" then
+												hitTarget(character, 100)
 												return true
-											elseif playerHit.Team == localPlayer.Team then
-												table.insert(localIgnoredCharacters, character)
 											else
-												local hitPlayerObj = playerHit
-												local hitHumanoidObj = humanoid
-												local hitInstanceObj = hitInstance
-												print(hitHumanoidObj)
-												local hitPosition = ptarget.Position
-												local isNonFatal = false
-		
-												dealShot(hitPlayerObj, hitHumanoidObj, hitInstanceObj, hitPosition, isNonFatal)
+												createFirearmImpact(raycastResult.Position, raycastResult.Normal)
+												projectileLanded(raycastResult.Position)
 												return true
 											end
-										elseif character.Name == "TargetModel" then
-											hitTarget(character, 100)
-											return true
-										else
-											createFirearmImpact(raycastResult.Position, raycastResult.Normal)
-											projectileLanded(raycastResult.Position)
-											return true
+										end
+
+										if localPlayerHit <= 0 then
+											break
 										end
 									end
-		
-									if localPlayerHit <= 0 then
-										break
-									end
+								else
+									return old(bullet, deltaTime, gravity)
 								end
-							else
-								return old(bullet, deltaTime, gravity)
-							end
-						end)
-					)
+							end)
+						)
+					end
 				end
 			end
 		end
