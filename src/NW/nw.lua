@@ -166,6 +166,7 @@ local Toggle = Tab1:CreateToggle({
 	Callback = function(Value) end,
 })
 
+local espConnection = nil
 -- ESP Toggle
 local Toggle = Tab2:CreateToggle({
 	Name = "Enable ESP",
@@ -174,7 +175,8 @@ local Toggle = Tab2:CreateToggle({
 	Callback = function(Value)
 		if Value then
 			-- ESP Loop
-			RunService.RenderStepped:Connect(function()
+			espConnection = RunService.RenderStepped:Connect(function()
+				if not espActive then return end
 				circle.Position = UserInputService:GetMouseLocation()
 
 				for player, table in currentPlayers do
@@ -202,9 +204,14 @@ local Toggle = Tab2:CreateToggle({
 				end
 			end)
 		else
+            if espConnection then
+                espConnection:Disconnect()
+                espConnection = nil
+            end
+            
 			for i, v in currentPlayers do
 				if currentPlayers[i] then
-					currentPlayers[i].box:Remove()
+					currentPlayers[i].box.Visible = false
 				end
 			end
 		end
