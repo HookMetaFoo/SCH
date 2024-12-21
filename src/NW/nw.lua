@@ -108,10 +108,10 @@ end
 -- GUI
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 local Window = Rayfield:CreateWindow({
-	Name = "Old Guard Client",
+	Name = "VG Client 2.0",
 	Icon = 0,
-	LoadingTitle = "Old Guard Client",
-	LoadingSubtitle = "",
+	LoadingTitle = "VG Client",
+	LoadingSubtitle = "Unequaled, Unrivaled",
 	Theme = "DarkBlue",
 	DisableRayfieldPrompts = false,
 	DisableBuildWarnings = false,
@@ -248,7 +248,7 @@ local Toggle = Tab2:CreateToggle({
 				if character then
 					torso = character:FindFirstChild("Torso")
 					if torso then
-						connections = {
+						connections[player] = {
 							ChildAdded = torso.ChildAdded:Connect(function(instance)
 								if instance.Name == "FlagJoint" then
 									local torso = instance.Parent
@@ -280,8 +280,58 @@ local Toggle = Tab2:CreateToggle({
 					end
 				end
 			end
+
+			Players.PlayerAdded:Connect(function(player)
+				if connections[player] then
+					return
+				end
+				player.CharacterAdded:Wait()
+				local character = player.Character
+				local torso = character.Torso
+				if torso then
+					connections[player] = {
+						ChildAdded = torso.ChildAdded:Connect(function(instance)
+							if instance.Name == "FlagJoint" then
+								local torso = instance.Parent
+								local character = torso.Parent
+								local player = Players:GetPlayerFromCharacter(character)
+								if player then
+									flags[player] = instance
+									currentPlayers[player].flagbearer = true
+									if currentPlayers[player].box then
+										currentPlayers[player].box.Color = Color3.new(1, 0, 0.784)
+									end
+								end
+							end
+						end),
+						ChildRemoved = torso.ChildRemoved:Connect(function(instance)
+							if instance.Name == "FlagJoint" then
+								for player, flag in flags do
+									if instance == flag then
+										flags[player] = nil
+										if currentPlayers[player] then
+											currentPlayers[player].flagbearer = false
+											currentPlayers[player].box.Color = player.TeamColor.Color
+										end
+									end
+								end
+							end
+						end),
+					}
+				end
+			end)
+
+			Players.PlayerRemoving:Connect(function(player)
+				if connections[player] then
+					if connections[player].ChildAdded then
+						connections[player].ChildAdded:Disconnect()
+					end
+					if connections[player].ChildRemoved then
+						connections[player].ChildRemoved:Disconnect()
+					end
+				end
+			end)
 		else
-			-- Turn off highlighting and reset all changes
 			for player, flag in flags do
 				if currentPlayers[player] then
 					currentPlayers[player].flagbearer = false
