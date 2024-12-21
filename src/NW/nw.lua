@@ -204,7 +204,7 @@ local Toggle = Tab2:CreateToggle({
 		else
 			for i, v in currentPlayers do
 				if currentPlayers[i] then
-					currentPlayers[i].box.Visible = false
+					currentPlayers[i].box:Remove()
 				end
 			end
 		end
