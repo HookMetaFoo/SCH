@@ -248,24 +248,16 @@ local Toggle = Tab2:CreateToggle({
 					for player, flagJoint in flags do
 						if flagJoint then
 							flagJoint.AncestryChanged:Connect(function(flagjoint, par)
-								if not par then
-									flags[player] = nil
-									if currentPlayers[player] then
-										currentPlayers[player].flagbearer = false
-										currentPlayers[player].box.Color = player.TeamColor.Color
-									end
-								else
-									for player, data in currentPlayers do
-										local character = player.Character
-										if character then
-											local torso = character:FindFirstChild("Torso")
-											if torso then
-												local flagJoint = torso:FindFirstChild("FlagJoint")
-												if flagJoint then
-													flags[player] = flagJoint
-													data.flagbearer = true
-													data.box.Color = Color3.new(1, 0, 0.784)
-												end
+								for player, data in currentPlayers do
+									local character = player.Character
+									if character then
+										local torso = character:FindFirstChild("Torso")
+										if torso then
+											local flagJoint = torso:FindFirstChild("FlagJoint")
+											if flagJoint then
+												flags[player] = flagJoint
+												data.flagbearer = true
+												data.box.Color = Color3.new(1, 0, 0.784)
 											end
 										end
 									end
