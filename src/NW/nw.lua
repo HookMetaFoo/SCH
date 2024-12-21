@@ -219,6 +219,7 @@ local Toggle = Tab2:CreateToggle({
 })
 
 local flags = {}
+local connections = {}
 local Toggle = Tab2:CreateToggle({
 	Name = "Highlight Flagbearer",
 	CurrentValue = false,
@@ -229,7 +230,7 @@ local Toggle = Tab2:CreateToggle({
 			for player, data in currentPlayers do
 				local character = player.Character
 				if character then
-					local torso = character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
+					local torso = character:FindFirstChild("Torso")
 					if torso then
 						local flagJoint = torso:FindFirstChild("FlagJoint")
 						if flagJoint then
@@ -241,49 +242,63 @@ local Toggle = Tab2:CreateToggle({
 				end
 			end
 
-			-- Detect and update if the flag's parent (player) changes
-			task.spawn(function()
-				while Value do
-					task.wait(1)
-					for player, flagJoint in flags do
-						if flagJoint then
-							flagJoint.AncestryChanged:Connect(function(flagjoint, par)
-								flags[player] = nil
-								if currentPlayers[player] then
-									currentPlayers[player].flagbearer = false
-									currentPlayers[player].box.Color = player.TeamColor.Color
+			for player, data in currentPlayers do
+				local character = player.Character
+				local torso
+				if character then
+					torso = character:FindFirstChild("Torso")
+					if torso then
+						connections = {
+							ChildAdded = torso.ChildAdded:Connect(function(instance)
+								if instance.Name == "FlagJoint" then
+									local torso = instance.Parent
+									local character = torso.Parent
+									local player = Players:GetPlayerFromCharacter(character)
+									if player then
+										flags[player] = instance
+										currentPlayers[player].flagbearer = true
+										if currentPlayers[player].box then
+											currentPlayers[player].box.Color = Color3.new(1, 0, 0.784)
+										end
+									end
 								end
-
-								for player, data in currentPlayers do
-									local character = player.Character
-									if character then
-										local torso = character:FindFirstChild("Torso")
-										if torso then
-											local flagJoint = torso:FindFirstChild("FlagJoint")
-											if flagJoint then
-												flags[player] = flagJoint
-												data.flagbearer = true
-												data.box.Color = Color3.new(1, 0, 0.784)
+							end),
+							ChildRemoved = torso.ChildRemoved:Connect(function(instance)
+								if instance.Name == "FlagJoint" then
+									for player, flag in flags do
+										if instance == flag then
+											flags[player] = nil
+											if currentPlayers[player] then
+												currentPlayers[player].flagbearer = false
+												currentPlayers[player].box.Color = player.TeamColor.Color
 											end
 										end
 									end
 								end
-							end)
-						end
+							end),
+						}
 					end
 				end
-			end)
+			end
 		else
 			-- Turn off highlighting and reset all changes
-			for player, flagJoint in pairs(flags) do
-				print(player.Name)
+			for player, flag in flags do
 				if currentPlayers[player] then
-					print(currentPlayers[player])
 					currentPlayers[player].flagbearer = false
 					currentPlayers[player].box.Color = player.TeamColor.Color
 				end
+
+				if connections[player] then
+					if connections[player].ChildAdded then
+						connections[player].ChildAdded:Disconnect()
+					end
+					if connections[player].ChildRemoved then
+						connections[player].ChildRemoved:Disconnect()
+					end
+				end
 			end
 			flags = {}
+			connections = {}
 		end
 	end,
 })
@@ -430,7 +445,6 @@ local Toggle = Tab1:CreateToggle({
 													local hitPlayerObj = playerHit
 													local hitHumanoidObj = humanoid
 													local hitInstanceObj = hitInstance
-													print(hitHumanoidObj)
 													local hitPosition = ptarget.Position
 													local isNonFatal = false
 
