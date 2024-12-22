@@ -60,48 +60,51 @@ end
 
 -- Create a table that contains the boxes for each player
 local function addPlayer(player)
-	if not currentPlayers[player] and player.Team ~= localPlayer.Team then
-		currentPlayers[player] = {
-			box = createBox(player.TeamColor.Color),
-			flagbearer = false,
-		}
-	end
+    if not currentPlayers[player] and player.Team ~= localPlayer.Team then
+        currentPlayers[player] = {
+            box = createBox(player.TeamColor.Color),
+            flagbearer = false,
+        }
+    else
+        currentPlayers[player].box.Color = player.TeamColor.Color
+    end
 end
 
 -- Add each player to the currentPlayers table
 for _, v in Players:GetPlayers() do
-	if v == localPlayer then
-		continue
-	end
-	v.Changed:Connect(function(property)
-		if property == "Team" then
-			if v.Team ~= localPlayer.Team then
-				addPlayer(v)
-			elseif currentPlayers[v] then
-				currentPlayers[v].box:Destroy()
-				currentPlayers[v] = nil
-			end
-		end
-	end)
-	if v == localPlayer or v.Team == localPlayer.Team then
-		continue
-	end
-	addPlayer(v)
+    if v == localPlayer then
+        continue
+    end
+
+    -- Connect to the "Team" property change signal
+    v:GetPropertyChangedSignal("Team"):Connect(function()
+        if v.Team ~= localPlayer.Team then
+            addPlayer(v)
+        elseif currentPlayers[v] then
+            currentPlayers[v].box:Destroy()
+            currentPlayers[v] = nil
+        end
+    end)
+
+    if v.Team ~= localPlayer.Team then
+        addPlayer(v)
+    end
 end
 
 -- If player has joined, add them to the table
 Players.PlayerAdded:Connect(function(player)
-	player.Changed:Connect(function(property)
-		if property == "Team" then
-			if player.Team ~= localPlayer.Team then
-				addPlayer(player)
-			elseif currentPlayers[player] then
-				currentPlayers[player].box:Destroy()
-				currentPlayers[player] = nil
-			end
-		end
-	end)
-	addPlayer(player)
+    player:GetPropertyChangedSignal("Team"):Connect(function()
+        if player.Team ~= localPlayer.Team then
+            addPlayer(player)
+        elseif currentPlayers[player] then
+            currentPlayers[player].box:Destroy()
+            currentPlayers[player] = nil
+        end
+    end)
+
+    if player.Team ~= localPlayer.Team then
+        addPlayer(player)
+    end
 end)
 
 -- Remove the box and set the player to nil if the player has left the game
@@ -112,21 +115,23 @@ Players.PlayerRemoving:Connect(function(player)
 	end
 end)
 
-localPlayer.Changed:Connect(function(property)
-	if property == "Team" then
-		for player, _ in currentPlayers do
-			if player.Team == localPlayer.Team then
-				currentPlayers[player].box:Destroy()
-				currentPlayers[player] = nil
-			end
-		end
-		for _, v in Players:GetPlayers() do
-			if v == localPlayer or v.Team == localPlayer.Team then
-				continue
-			end
-			addPlayer(v)
-		end
-	end
+-- Handle team changes for the local player
+localPlayer:GetPropertyChangedSignal("Team"):Connect(function()
+    -- Clear ESP for players now on the same team
+    for player, _ in pairs(currentPlayers) do
+        if player.Team == localPlayer.Team then
+            currentPlayers[player].box:Destroy()
+            currentPlayers[player] = nil
+        end
+    end
+
+    -- Add ESP for players on opposing teams
+    for _, v in Players:GetPlayers() do
+        if v == localPlayer or v.Team == localPlayer.Team then
+            continue
+        end
+        addPlayer(v)
+    end
 end)
 
 -- Aimbot Functions
