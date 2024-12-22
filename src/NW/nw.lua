@@ -64,10 +64,30 @@ for _, v in Players:GetPlayers() do
 		continue
 	end
 	addPlayer(v)
+	v.Changed:Connect(function(property)
+		if property == "Team" then
+			if v.Team ~= localPlayer.Team then
+				addPlayer(v)
+			elseif currentPlayers[v] then
+				currentPlayers[v].box:Destroy()
+				currentPlayers[v] = nil
+			end
+		end
+	end)
 end
 
 -- If player has joined, add them to the table
 Players.PlayerAdded:Connect(function(player)
+	player.Changed:Connect(function(property)
+		if property == "Team" then
+			if player.Team ~= localPlayer.Team then
+				addPlayer(player)
+			elseif currentPlayers[player] then
+				currentPlayers[player].box:Destroy()
+				currentPlayers[player] = nil
+			end
+		end
+	end)
 	addPlayer(player)
 end)
 
@@ -76,6 +96,23 @@ Players.PlayerRemoving:Connect(function(player)
 	if currentPlayers[player] then
 		currentPlayers[player].box:Remove()
 		currentPlayers[player] = nil
+	end
+end)
+
+localPlayer.Changed:Connect(function(property)
+	if property == "Team" then
+		for player,_ in currentPlayers do
+			if player.Team == localPlayer.Team then
+				currentPlayers[player].box:Destroy()
+                currentPlayers[player] = nil
+            end
+		end
+        for _, v in Players:GetPlayers() do
+	        if v == localPlayer or v.Team == localPlayer.Team then
+		        continue
+	        end
+	        addPlayer(v)
+        end
 	end
 end)
 
