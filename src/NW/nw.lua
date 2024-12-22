@@ -14,6 +14,7 @@ local currentPlayers = {}
 local fov = 100
 local mouse = localPlayer:GetMouse()
 local espConnection = nil
+local showOnlyFlagbearers = false
 -- Aimbot Functionality
 local dealShot
 local hitTarget
@@ -78,10 +79,6 @@ end
 
 -- Add each player to the currentPlayers table
 for _, v in Players:GetPlayers() do
-	if v == localPlayer or v.Team == localPlayer.Team then
-		continue
-	end
-	addPlayer(v)
 	v.Changed:Connect(function(property)
 		if property == "Team" then
 			if v.Team ~= localPlayer.Team then
@@ -92,6 +89,10 @@ for _, v in Players:GetPlayers() do
 			end
 		end
 	end)
+	if v == localPlayer or v.Team == localPlayer.Team then
+		continue
+	end
+	addPlayer(v)
 end
 
 -- If player has joined, add them to the table
@@ -320,23 +321,25 @@ local Toggle = Tab2:CreateToggle({
 			espConnection = RunService.RenderStepped:Connect(function()
 				circle.Position = UserInputService:GetMouseLocation()
 				for player, table in currentPlayers do
-					if player then
-						if player.Character then
-							local character = player.Character
-							local root = character:FindFirstChild("HumanoidRootPart")
-							local head = character:FindFirstChild("Head")
-							if root and head then
-								local root2d, onscreen = camera:WorldToViewportPoint(root.Position)
-								local head2 = camera:WorldToViewportPoint(head.Position)
-								if onscreen and root2d and head2 then
-									local distanceY = math.clamp(
-										(Vector2.new(head2.X, head2.Y) - Vector2.new(root2d.X, root2d.Y)).Magnitude,
-										2,
-										math.huge
-									)
-									updateBoxes(table.box, distanceY, root2d)
-								else
-									table.box.Visible = false
+					if (currentPlayers[player].flagbearer == true and showOnlyFlagbearers) or not showOnlyFlagbearers then
+						if player then
+							if player.Character then
+								local character = player.Character
+								local root = character:FindFirstChild("HumanoidRootPart")
+								local head = character:FindFirstChild("Head")
+								if root and head then
+									local root2d, onscreen = camera:WorldToViewportPoint(root.Position)
+									local head2 = camera:WorldToViewportPoint(head.Position)
+									if onscreen and root2d and head2 then
+										local distanceY = math.clamp(
+											(Vector2.new(head2.X, head2.Y) - Vector2.new(root2d.X, root2d.Y)).Magnitude,
+											2,
+											math.huge
+										)
+										updateBoxes(table.box, distanceY, root2d)
+									else
+										table.box.Visible = false
+									end
 								end
 							end
 						end
@@ -494,6 +497,15 @@ local Toggle = Tab2:CreateToggle({
 			flags = {}
 			connections = {}
 		end
+	end,
+})
+
+local Toggle = Tab2:CreateToggle({
+	Name = "Only show flagbearers",
+	CurrentValue = false,
+	Flag = "Flagbearer1",
+	Callback = function(Value)
+		showOnlyFlagbearers = Value
 	end,
 })
 
