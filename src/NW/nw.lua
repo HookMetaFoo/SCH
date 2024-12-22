@@ -34,16 +34,6 @@ for i, v in getgc(true) do
 	end
 end
 
--- Circles
-local circle = Drawing.new("Circle")
-circle.Color = Color3.new(0, 0, 1)
-circle.Transparency = 1
-circle.Radius = fov
-circle.Filled = false
-circle.Thickness = 2
-circle.Position = Vector2.new(0, 0)
-circle.Visible = true
-
 -- ESP Functions
 local function createBox(color)
 	local box = Drawing.new("Quad")
@@ -322,7 +312,6 @@ local Toggle = Tab2:CreateToggle({
 		if Value then
 			-- ESP Loop
 			espConnection = RunService.RenderStepped:Connect(function()
-				circle.Position = UserInputService:GetMouseLocation()
 				for player, table in currentPlayers do
 					if (currentPlayers[player].flagbearer == true and showOnlyFlagbearers) or not showOnlyFlagbearers then
 						if player then
