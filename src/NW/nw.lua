@@ -346,6 +346,8 @@ local Toggle = Tab2:CreateToggle({
 								end
 							end
 						end
+					else
+						table.box.Visible = false
 					end
 				end
 			end)
