@@ -79,6 +79,9 @@ end
 
 -- Add each player to the currentPlayers table
 for _, v in Players:GetPlayers() do
+	if v == localPlayer then
+		continue
+	end
 	v.Changed:Connect(function(property)
 		if property == "Team" then
 			if v.Team ~= localPlayer.Team then
