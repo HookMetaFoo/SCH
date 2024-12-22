@@ -19,6 +19,20 @@ local dealShot
 local hitTarget
 local createFirearmImpact
 
+for i, v in getgc(true) do
+	if typeof(v) == "function" then
+		if debug.getinfo(v).name == "dealShot" then
+			dealShot = v
+		elseif debug.getinfo(v).name == "hitTarget" then
+			hitTarget = v
+		elseif debug.getinfo(v).name == "createFirearmImpact" then
+			createFirearmImpact = v
+		elseif debug.getinfo(v).name == "projectileLanded" then
+			projectileLanded = v
+		end
+	end
+end
+
 -- Circles
 local circle = Drawing.new("Circle")
 circle.Color = Color3.new(0, 0, 1)
@@ -481,20 +495,6 @@ local Toggle = Tab2:CreateToggle({
 
 for i, v in getgc(true) do
 	if typeof(v) == "function" then
-		if debug.getinfo(v).name == "dealShot" then
-			dealShot = v
-		elseif debug.getinfo(v).name == "hitTarget" then
-			hitTarget = v
-		elseif debug.getinfo(v).name == "createFirearmImpact" then
-			createFirearmImpact = v
-		elseif debug.getinfo(v).name == "projectileLanded" then
-			projectileLanded = v
-		end
-	end
-end
-
-for i, v in getgc(true) do
-	if typeof(v) == "function" then
 		if debug.getinfo(v).name == "simulateFirearmProjectile" then
 			local old
 			old = hookfunction(
@@ -570,87 +570,3 @@ for i, v in getgc(true) do
 	end
 end
 
--- STILL WIP
--- Silent Aim
-local Toggle = Tab1:CreateToggle({
-	Name = "Enable Silent Aim",
-	CurrentValue = false,
-	Flag = "Aimbot3",
-	Callback = function(Value)
-		if Value then
-			for i, v in getgc(true) do
-				if typeof(v) == "function" then
-					if debug.getinfo(v).name == "simulateFirearmProjectile" then
-						local old
-						old = hookfunction(
-							v,
-							newcclosure(function(bullet, deltaTime, gravity)
-								local originPosition = bullet.position
-								local direction = (mouse.Hit.Position - originPosition).Unit
-								local destinationVector = direction
-								local raycastParams = RaycastParams.new()
-								if bullet.isLocal then
-									local localPlayerHit = 4
-									local localIgnoredCharacters = {}
-									table.clear(localIgnoredCharacters)
-									table.insert(localIgnoredCharacters, localPlayer.Character)
-
-									while true do
-										raycastParams.FilterDescendantsInstances = localIgnoredCharacters
-										localPlayerHit = localPlayerHit - 1
-
-										local raycastResult =
-											workspace:Raycast(originPosition, destinationVector * 10000, raycastParams)
-										if raycastResult then
-											local hitInstance = ptarget
-											local character = ptarget.Parent
-											local humanoid = character:FindFirstChild("Humanoid")
-
-											if humanoid and isLocked then
-												local playerHit = Players:GetPlayerFromCharacter(character)
-
-												if not playerHit then
-													return true
-												elseif playerHit.Team == localPlayer.Team then
-													table.insert(localIgnoredCharacters, character)
-												else
-													local hitPlayerObj = playerHit
-													local hitHumanoidObj = humanoid
-													local hitInstanceObj = hitInstance
-													local hitPosition = ptarget.Position
-													local isNonFatal = false
-
-													dealShot(
-														hitPlayerObj,
-														hitHumanoidObj,
-														hitInstanceObj,
-														hitPosition,
-														isNonFatal
-													)
-													return true
-												end
-											elseif character.Name == "TargetModel" then
-												hitTarget(character, 100)
-												return true
-											else
-												createFirearmImpact(raycastResult.Position, raycastResult.Normal)
-												projectileLanded(raycastResult.Position)
-												return true
-											end
-										end
-
-										if localPlayerHit <= 0 then
-											break
-										end
-									end
-								else
-									return old(bullet, deltaTime, gravity)
-								end
-							end)
-						)
-					end
-				end
-			end
-		end
-	end,
-})
