@@ -15,6 +15,7 @@ local fov = 100
 local mouse = localPlayer:GetMouse()
 local espConnection = nil
 local showOnlyFlagbearers = false
+local prioritzeFlagbearer = false
 -- Aimbot Functionality
 local dealShot
 local hitTarget
@@ -142,6 +143,9 @@ local function getTarget()
 				if onscreen then
 					local mouse = UserInputService:GetMouseLocation()
 					local enemydistance = (Vector2.new(mouse.X, mouse.Y) - Vector2.new(root2d.X, root2d.Y)).Magnitude
+					if currentPlayers[v] and currentPlayers[v].flagbearer == true and enemydistance <= fov and prioritzeFlagbearer then
+						return root2d
+					end
 					if enemydistance < distance and enemydistance <= fov then
 						target = root2d
 						ptarget = humanoidRootPart
@@ -300,7 +304,9 @@ local Toggle = Tab1:CreateToggle({
 	Name = "Prioritize Flagbearer",
 	CurrentValue = false,
 	Flag = "Flagbearer1",
-	Callback = function(Value) end,
+	Callback = function(Value) 
+		prioritzeFlagbearer = Value
+	end,
 })
 
 -- ESP Toggle
