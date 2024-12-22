@@ -119,18 +119,18 @@ end)
 
 localPlayer.Changed:Connect(function(property)
 	if property == "Team" then
-		for player,_ in currentPlayers do
+		for player, _ in currentPlayers do
 			if player.Team == localPlayer.Team then
 				currentPlayers[player].box:Destroy()
-                currentPlayers[player] = nil
-            end
+				currentPlayers[player] = nil
+			end
 		end
-        for _, v in Players:GetPlayers() do
-	        if v == localPlayer or v.Team == localPlayer.Team then
-		        continue
-	        end
-	        addPlayer(v)
-        end
+		for _, v in Players:GetPlayers() do
+			if v == localPlayer or v.Team == localPlayer.Team then
+				continue
+			end
+			addPlayer(v)
+		end
 	end
 end)
 
@@ -396,9 +396,11 @@ local Toggle = Tab2:CreateToggle({
 									local player = Players:GetPlayerFromCharacter(character)
 									if player then
 										flags[player] = instance
-										currentPlayers[player].flagbearer = true
-										if currentPlayers[player].box then
-											currentPlayers[player].box.Color = Color3.new(1, 0, 0.784)
+										if currentPlayers[player] then
+											currentPlayers[player].flagbearer = true
+											if currentPlayers[player].box then
+												currentPlayers[player].box.Color = Color3.new(1, 0, 0.784)
+											end
 										end
 									end
 								end
@@ -437,9 +439,11 @@ local Toggle = Tab2:CreateToggle({
 								local player = Players:GetPlayerFromCharacter(character)
 								if player then
 									flags[player] = instance
-									currentPlayers[player].flagbearer = true
-									if currentPlayers[player].box then
-										currentPlayers[player].box.Color = Color3.new(1, 0, 0.784)
+									if currentPlayers[player] then
+										currentPlayers[player].flagbearer = true
+										if currentPlayers[player].box then
+											currentPlayers[player].box.Color = Color3.new(1, 0, 0.784)
+										end
 									end
 								end
 							end
@@ -569,4 +573,3 @@ for i, v in getgc(true) do
 		end
 	end
 end
-
