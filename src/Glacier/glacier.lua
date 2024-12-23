@@ -2,28 +2,12 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local vim = game:GetService("VirtualInputManager")
 
 local camera = game.Workspace.CurrentCamera
 local localPlayer = Players.LocalPlayer
 local currentPlayers = {}
 local fov = 100
 local espConnection = nil
-local showOnlyFlagbearers = false
-
-for i, v in getgc(true) do
-	if typeof(v) == "function" then
-		if debug.getinfo(v).name == "dealShot" then
-			dealShot = v
-		elseif debug.getinfo(v).name == "hitTarget" then
-			hitTarget = v
-		elseif debug.getinfo(v).name == "createFirearmImpact" then
-			createFirearmImpact = v
-		elseif debug.getinfo(v).name == "projectileLanded" then
-			projectileLanded = v
-		end
-	end
-end
 
 -- ESP Functions
 local function createBox(color)
@@ -50,50 +34,50 @@ end
 
 -- Create a table that contains the boxes for each player
 local function addPlayer(player)
-    if not currentPlayers[player] and player.Team ~= localPlayer.Team then
-        currentPlayers[player] = {
-            box = createBox(player.TeamColor.Color),
-        }
-    else
-        currentPlayers[player].box.Color = player.TeamColor.Color
-    end
+	if not currentPlayers[player] and player.Team ~= localPlayer.Team then
+		currentPlayers[player] = {
+			box = createBox(player.TeamColor.Color),
+		}
+	else
+		currentPlayers[player].box.Color = player.TeamColor.Color
+	end
 end
 
 -- Add each player to the currentPlayers table
 for _, v in Players:GetPlayers() do
-    if v == localPlayer then
-        continue
-    end
+	if v == localPlayer then
+		continue
+	end
 
-    -- Connect to the "Team" property change signal
-    v:GetPropertyChangedSignal("Team"):Connect(function()
-        if v.Team ~= localPlayer.Team then
-            addPlayer(v)
-        elseif currentPlayers[v] then
-            currentPlayers[v].box:Destroy()
-            currentPlayers[v] = nil
-        end
-    end)
+	-- Connect to the "Team" property change signal
+	v:GetPropertyChangedSignal("Team"):Connect(function()
+		if v.Team ~= localPlayer.Team then
+			addPlayer(v)
+		elseif currentPlayers[v] then
+			currentPlayers[v].box:Destroy()
+			currentPlayers[v] = nil
+		end
+	end)
 
-    if v.Team ~= localPlayer.Team then
-        addPlayer(v)
-    end
+	if v.Team ~= localPlayer.Team then
+		addPlayer(v)
+	end
 end
 
 -- If player has joined, add them to the table
 Players.PlayerAdded:Connect(function(player)
-    player:GetPropertyChangedSignal("Team"):Connect(function()
-        if player.Team ~= localPlayer.Team then
-            addPlayer(player)
-        elseif currentPlayers[player] then
-            currentPlayers[player].box:Destroy()
-            currentPlayers[player] = nil
-        end
-    end)
+	player:GetPropertyChangedSignal("Team"):Connect(function()
+		if player.Team ~= localPlayer.Team then
+			addPlayer(player)
+		elseif currentPlayers[player] then
+			currentPlayers[player].box:Destroy()
+			currentPlayers[player] = nil
+		end
+	end)
 
-    if player.Team ~= localPlayer.Team then
-        addPlayer(player)
-    end
+	if player.Team ~= localPlayer.Team then
+		addPlayer(player)
+	end
 end)
 
 -- Remove the box and set the player to nil if the player has left the game
@@ -106,21 +90,21 @@ end)
 
 -- Handle team changes for the local player
 localPlayer:GetPropertyChangedSignal("Team"):Connect(function()
-    -- Clear ESP for players now on the same team
-    for player, _ in pairs(currentPlayers) do
-        if player.Team == localPlayer.Team then
-            currentPlayers[player].box:Destroy()
-            currentPlayers[player] = nil
-        end
-    end
+	-- Clear ESP for players now on the same team
+	for player, _ in pairs(currentPlayers) do
+		if player.Team == localPlayer.Team then
+			currentPlayers[player].box:Destroy()
+			currentPlayers[player] = nil
+		end
+	end
 
-    -- Add ESP for players on opposing teams
-    for _, v in Players:GetPlayers() do
-        if v == localPlayer or v.Team == localPlayer.Team then
-            continue
-        end
-        addPlayer(v)
-    end
+	-- Add ESP for players on opposing teams
+	for _, v in Players:GetPlayers() do
+		if v == localPlayer or v.Team == localPlayer.Team then
+			continue
+		end
+		addPlayer(v)
+	end
 end)
 
 -- Aimbot Functions
@@ -130,15 +114,15 @@ local function getTarget()
 	for _, v in Players:GetPlayers() do
 		if v.Character and v ~= localPlayer and v.Team ~= localPlayer.Team then
 			local character = v.Character
-			local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+			local head = character:FindFirstChild("Head")
 			local humanoid = character:FindFirstChild("Humanoid")
-			if humanoidRootPart and humanoid and humanoid.Health > 0 then
-				local root2d, onscreen = camera:WorldToViewportPoint(humanoidRootPart.Position)
+			if head and humanoid and humanoid.Health > 0 then
+				local head2d, onscreen = camera:WorldToViewportPoint(head.Position)
 				if onscreen then
 					local mouse = UserInputService:GetMouseLocation()
-					local enemydistance = (Vector2.new(mouse.X, mouse.Y) - Vector2.new(root2d.X, root2d.Y)).Magnitude
+					local enemydistance = (Vector2.new(mouse.X, mouse.Y) - Vector2.new(head2d.X, head2d.Y)).Magnitude
 					if enemydistance < distance and enemydistance <= fov then
-						target = root2d
+						target = head
 						distance = enemydistance
 					end
 				end
@@ -182,8 +166,8 @@ local Toggle = Tab1:CreateToggle({
 							local target = getTarget()
 							isLocked = true
 							if target then
-								vim:SendMouseMoveEvent(target.X, target.Y, game)
-								
+								local newCFrame = CFrame.new(camera.CFrame.Position, target.CFrame.Position)
+                                camera.CFrame = newCFrame
 							end
 						else
 							isLocked = false
@@ -207,30 +191,26 @@ local Toggle = Tab2:CreateToggle({
 			-- ESP Loop
 			espConnection = RunService.RenderStepped:Connect(function()
 				for player, table in currentPlayers do
-					if (currentPlayers[player].flagbearer == true and showOnlyFlagbearers) or not showOnlyFlagbearers then
-						if player then
-							if player.Character then
-								local character = player.Character
-								local root = character:FindFirstChild("HumanoidRootPart")
-								local head = character:FindFirstChild("Head")
-								if root and head then
-									local root2d, onscreen = camera:WorldToViewportPoint(root.Position)
-									local head2 = camera:WorldToViewportPoint(head.Position)
-									if onscreen and root2d and head2 then
-										local distanceY = math.clamp(
-											(Vector2.new(head2.X, head2.Y) - Vector2.new(root2d.X, root2d.Y)).Magnitude,
-											2,
-											math.huge
-										)
-										updateBoxes(table.box, distanceY, root2d)
-									else
-										table.box.Visible = false
-									end
+					if player then
+						if player.Character then
+							local character = player.Character
+							local root = character:FindFirstChild("HumanoidRootPart")
+							local head = character:FindFirstChild("Head")
+							if root and head then
+								local root2d, onscreen = camera:WorldToViewportPoint(root.Position)
+								local head2d = camera:WorldToViewportPoint(head.Position)
+								if onscreen and root2d and head2d then
+									local distanceY = math.clamp(
+										(Vector2.new(head2d.X, head2d.Y) - Vector2.new(root2d.X, root2d.Y)).Magnitude,
+										2,
+										math.huge
+									)
+									updateBoxes(table.box, distanceY, root2d)
+								else
+									table.box.Visible = false
 								end
 							end
 						end
-					else
-						table.box.Visible = false
 					end
 				end
 			end)
