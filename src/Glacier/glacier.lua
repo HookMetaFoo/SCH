@@ -139,7 +139,6 @@ local function getTarget()
 					local enemydistance = (Vector2.new(mouse.X, mouse.Y) - Vector2.new(root2d.X, root2d.Y)).Magnitude
 					if enemydistance < distance and enemydistance <= fov then
 						target = root2d
-						ptarget = humanoidRootPart
 						distance = enemydistance
 					end
 				end
