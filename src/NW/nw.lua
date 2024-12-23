@@ -330,7 +330,7 @@ local Toggle = Tab1:CreateToggle({
 			text.Outlined = true
 			text.OutlineColor = Color3.new(0,0,0)
 			text.Visible = false
-			text.Position = Vector2.new(screenDimension.X / 2, screenDimension.Y - 50)
+			text.Position = Vector2.new(screenDimension.X / 2, screenDimension.Y - 100)
 		end
 	end,
 })
