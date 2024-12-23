@@ -137,6 +137,18 @@ localPlayer:GetPropertyChangedSignal("Team"):Connect(function()
     end
 end)
 
+-- Function for linear interpolation
+local function lerp(start, goal, alpha)
+    return start + (goal - start) * alpha
+end
+
+-- Smooth aiming function
+local function smoothAim(currentX, currentY, targetX, targetY, smoothFactor)
+    local newX = lerp(currentX, targetX, smoothFactor)
+    local newY = lerp(currentY, targetY, smoothFactor)
+    return newX, newY
+end
+
 -- Aimbot Functions
 local function getTarget()
 	local distance = math.huge
@@ -207,9 +219,11 @@ local Toggle = Tab1:CreateToggle({
 						task.wait()
 						if UserInputService:IsKeyDown(Enum.KeyCode.J) then
 							local target = getTarget()
+							local currentCords = UserInputService:GetMouseLocation()
 							isLocked = true
 							if target then
-								vim:SendMouseMoveEvent(target.x, target.y, game)
+								local newX,newY = smoothAim(currentCords.X, currentCords.Y, target.X, target.Y, 0.2)
+								vim:SendMouseMoveEvent(newX, newY, game)
 								if indicatorOn then
 									text.Visible = true
 								end
@@ -329,8 +343,9 @@ local Toggle = Tab1:CreateToggle({
 			text.Font = Drawing.Fonts.UI
 			text.Outlined = true
 			text.OutlineColor = Color3.new(0,0,0)
+            text.Centered = true
 			text.Visible = false
-			text.Position = Vector2.new(screenDimension.X / 2, screenDimension.Y - 100)
+			text.Position = Vector2.new(screenDimension.X / 2, screenDimension.Y - 250)
 		else
 			text:Destroy()
 			text = nil
