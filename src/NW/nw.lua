@@ -169,7 +169,7 @@ local function getTarget()
 			end
 		end
 	end
-	if indicatorOn and text then
+	if indicatorOn and text and player then
 		text.Text = "Locked onto: " .. player.Name
 	end
 	return target
