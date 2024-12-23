@@ -121,7 +121,7 @@ end)
 -- Handle team changes for the local player
 localPlayer:GetPropertyChangedSignal("Team"):Connect(function()
     -- Clear ESP for players now on the same team
-    for player, _ in pairs(currentPlayers) do
+    for player, _ in currentPlayers do
         if player.Team == localPlayer.Team then
             currentPlayers[player].box:Destroy()
             currentPlayers[player] = nil

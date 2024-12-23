@@ -91,7 +91,7 @@ end)
 -- Handle team changes for the local player
 localPlayer:GetPropertyChangedSignal("Team"):Connect(function()
 	-- Clear ESP for players now on the same team
-	for player, _ in pairs(currentPlayers) do
+	for player, _ in currentPlayers do
 		if player.Team == localPlayer.Team then
 			currentPlayers[player].box:Destroy()
 			currentPlayers[player] = nil
@@ -167,7 +167,7 @@ local Toggle = Tab1:CreateToggle({
 							isLocked = true
 							if target then
 								local newCFrame = CFrame.new(camera.CFrame.Position, target.CFrame.Position)
-                                camera.CFrame = newCFrame
+								camera.CFrame = newCFrame
 							end
 						else
 							isLocked = false
@@ -190,31 +190,29 @@ local Toggle = Tab2:CreateToggle({
 		if Value then
 			-- ESP Loop
 			espConnection = RunService.RenderStepped:Connect(function()
-				for player, table in currentPlayers do
-					if player then
-						if player.Character then
-							local character = player.Character
-							local root = character:FindFirstChild("HumanoidRootPart")
-							local head = character:FindFirstChild("Head")
-							if root and head then
-								local root2d, onscreen = camera:WorldToViewportPoint(root.Position)
+				for player, data in currentPlayers do
+					if player and player.Character then
+						local character = player.Character
+						local root = character:FindFirstChild("HumanoidRootPart")
+						local head = character:FindFirstChild("Head")
+						if root and head then
+							local root2d, onscreen = camera:WorldToViewportPoint(root.Position)
+							if onscreen and root2d.Z > 0 then
 								local head2d = camera:WorldToViewportPoint(head.Position)
-								if onscreen and root2d and head2d then
-									local distanceY = math.clamp(
-										(Vector2.new(head2d.X, head2d.Y) - Vector2.new(root2d.X, root2d.Y)).Magnitude,
-										2,
-										math.huge
-									)
-									updateBoxes(table.box, distanceY, root2d)
-								else
-									table.box.Visible = false
-								end
+								local distanceY = math.clamp(
+									(Vector2.new(head2d.X, head2d.Y) - Vector2.new(root2d.X, root2d.Y)).Magnitude,
+									2,
+									math.huge
+								)
+								updateBoxes(data.box, distanceY, root2d)
+							else
+								data.box.Visible = false
 							end
-                        else
-                            table.box.Visible = false
+						else
+							data.box.Visible = false 
 						end
-                    elseif table and table.box then
-                        table.box.Visible = false
+					else
+						data.box.Visible = false 
 					end
 				end
 			end)
