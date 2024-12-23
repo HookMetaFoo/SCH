@@ -149,6 +149,7 @@ local function getTarget()
 					local mouse = UserInputService:GetMouseLocation()
 					local enemydistance = (Vector2.new(mouse.X, mouse.Y) - Vector2.new(root2d.X, root2d.Y)).Magnitude
 					if currentPlayers[v] and currentPlayers[v].flagbearer == true and enemydistance <= fov and prioritzeFlagbearer then
+						ptarget = humanoidRootPart
 						return root2d
 					end
 					if enemydistance < distance and enemydistance <= fov then
