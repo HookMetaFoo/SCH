@@ -210,7 +210,11 @@ local Toggle = Tab2:CreateToggle({
 									table.box.Visible = false
 								end
 							end
+                        else
+                            table.box.Visible = false
 						end
+                    elseif table and table.box then
+                        table.box.Visible = false
 					end
 				end
 			end)
