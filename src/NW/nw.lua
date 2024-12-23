@@ -331,6 +331,9 @@ local Toggle = Tab1:CreateToggle({
 			text.OutlineColor = Color3.new(0,0,0)
 			text.Visible = false
 			text.Position = Vector2.new(screenDimension.X / 2, screenDimension.Y - 100)
+		else
+			text:Destroy()
+			text = nil
 		end
 	end,
 })
