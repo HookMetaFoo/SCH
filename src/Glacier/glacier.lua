@@ -8,6 +8,17 @@ local localPlayer = Players.LocalPlayer
 local currentPlayers = {}
 local fov = 100
 local espConnection = nil
+local fovCircle
+local screenDimensions = camera.ViewportSize
+
+fovCircle = Drawing.new("Circle")
+fovCircle.Color = Color3.new(0,0,0)
+fovCircle.Filled = false
+fovCircle.NumSides = 100
+fovCircle.Transparency = 1
+fovCircle.Radius = fov
+fovCircle.Position = Vector2.new(screenDimensions.X / 2, screenDimensions.Y / 2)
+fovCircle.Visible = true
 
 -- ESP Functions
 local function createBox(color)
@@ -24,6 +35,20 @@ local function createBox(color)
 	return box
 end
 
+
+local function createText(color, name)
+	local text = Drawing.new("Text")
+	text.Text = name
+	text.Color = color
+	text.Size = 10
+	text.Font = Drawing.Fonts.UI
+    text.Outlined = false
+	text.Centered = true
+	text.Visible = false
+	text.Position = Vector2.new(0,0)
+    return text
+end
+
 local function updateBoxes(box, distanceY, root2d)
 	box.PointA = Vector2.new(root2d.X + distanceY, root2d.Y - distanceY * 2)
 	box.PointB = Vector2.new(root2d.X - distanceY, root2d.Y - distanceY * 2)
@@ -32,14 +57,21 @@ local function updateBoxes(box, distanceY, root2d)
 	box.Visible = true
 end
 
+local function updateLabel(label,distanceY,root2d)
+    label.Position = Vector2.new(root2d.X,root2d.Y - distanceY * 4)
+    label.Visible = true
+end
+
 -- Create a table that contains the boxes for each player
 local function addPlayer(player)
 	if not currentPlayers[player] and player.Team ~= localPlayer.Team then
 		currentPlayers[player] = {
 			box = createBox(player.TeamColor.Color),
+            label = createText(player.TeamColor.Color, player.Name)
 		}
 	else
 		currentPlayers[player].box.Color = player.TeamColor.Color
+        currentPlayers[player].label.Color = player.TeamColor.Color
 	end
 end
 
@@ -55,6 +87,7 @@ for _, v in Players:GetPlayers() do
 			addPlayer(v)
 		elseif currentPlayers[v] then
 			currentPlayers[v].box:Destroy()
+            currentPlayers[v].label:Destroy()
 			currentPlayers[v] = nil
 		end
 	end)
@@ -71,6 +104,7 @@ Players.PlayerAdded:Connect(function(player)
 			addPlayer(player)
 		elseif currentPlayers[player] then
 			currentPlayers[player].box:Destroy()
+            currentPlayers[player].label:Destroy()
 			currentPlayers[player] = nil
 		end
 	end)
@@ -84,6 +118,7 @@ end)
 Players.PlayerRemoving:Connect(function(player)
 	if currentPlayers[player] then
 		currentPlayers[player].box:Remove()
+        currentPlayers[player].label:Destroy()
 		currentPlayers[player] = nil
 	end
 end)
@@ -94,6 +129,7 @@ localPlayer:GetPropertyChangedSignal("Team"):Connect(function()
 	for player, _ in currentPlayers do
 		if player.Team == localPlayer.Team then
 			currentPlayers[player].box:Destroy()
+            currentPlayers[player].label:Destroy()
 			currentPlayers[player] = nil
 		end
 	end
@@ -205,14 +241,18 @@ local Toggle = Tab2:CreateToggle({
 									math.huge
 								)
 								updateBoxes(data.box, distanceY, root2d)
+                                updateLabel(data.label, distanceY, root2d)
 							else
 								data.box.Visible = false
+                                data.label.Visible = false
 							end
 						else
-							data.box.Visible = false 
+							data.box.Visible = false
+                            data.label.Visible = false
 						end
 					else
-						data.box.Visible = false 
+						data.box.Visible = false
+                        data.label.Visible = false
 					end
 				end
 			end)
