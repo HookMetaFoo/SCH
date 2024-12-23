@@ -16,6 +16,9 @@ local mouse = localPlayer:GetMouse()
 local espConnection = nil
 local showOnlyFlagbearers = false
 local prioritzeFlagbearer = false
+local screenDimension = camera.ViewportSize
+local text = nil
+local indicatorOn = false
 -- Aimbot Functionality
 local dealShot
 local hitTarget
@@ -138,6 +141,7 @@ end)
 local function getTarget()
 	local distance = math.huge
 	local target = nil
+	local player = nil
 	for _, v in Players:GetPlayers() do
 		if v.Character and v ~= localPlayer and v.Team ~= localPlayer.Team then
 			local character = v.Character
@@ -150,9 +154,13 @@ local function getTarget()
 					local enemydistance = (Vector2.new(mouse.X, mouse.Y) - Vector2.new(root2d.X, root2d.Y)).Magnitude
 					if currentPlayers[v] and currentPlayers[v].flagbearer == true and enemydistance <= fov and prioritzeFlagbearer then
 						ptarget = humanoidRootPart
+						if indicatorOn and text then
+							text.Text = "Locked onto: " .. v.Name
+						end
 						return root2d
 					end
 					if enemydistance < distance and enemydistance <= fov then
+						player = v
 						target = root2d
 						ptarget = humanoidRootPart
 						distance = enemydistance
@@ -160,6 +168,9 @@ local function getTarget()
 				end
 			end
 		end
+	end
+	if indicatorOn and text then
+		text.Text = "Locked onto: " .. player.Name
 	end
 	return target
 end
@@ -199,8 +210,14 @@ local Toggle = Tab1:CreateToggle({
 							isLocked = true
 							if target then
 								vim:SendMouseMoveEvent(target.x, target.y, game)
+								if indicatorOn then
+									text.Visible = true
+								end
 							end
 						else
+							if indicatorOn then
+								text.Visible = false
+							end
 							isLocked = false
 						end
 					end
@@ -302,7 +319,20 @@ local Toggle = Tab1:CreateToggle({
 	Name = "Enable Aimbot Indicator",
 	CurrentValue = false,
 	Flag = "Aimbot2",
-	Callback = function(Value) end,
+	Callback = function(Value) 
+		indicatorOn = Value
+		if Value then
+			text = Drawing.new("Text")
+			text.Text = ""
+			text.Color = Color3.new(1, 0, 0.784)
+			text.Size = 20
+			text.Font = Drawing.Fonts.UI
+			text.Outlined = true
+			text.OutlineColor = Color3.new(0,0,0)
+			text.Visible = false
+			text.Position = Vector2.new(screenDimension.X / 2, screenDimension.Y - 50)
+		end
+	end,
 })
 
 -- Prioritize Flagbearer Toggle
