@@ -3,16 +3,19 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
-local camera = game.Workspace.CurrentCamera
 local localPlayer = Players.LocalPlayer
 local currentPlayers = {}
 local fov = 100
 local espConnection = nil
 local fovCircle
+local camera = game.Workspace.CurrentCamera
 local screenDimensions = camera.ViewportSize
+local aimbotConnection = nil
+local isAimbotActive = false
+local aimbotactive = false
 
 fovCircle = Drawing.new("Circle")
-fovCircle.Color = Color3.new(0,0,0)
+fovCircle.Color = Color3.new(1, 1, 1)
 fovCircle.Filled = false
 fovCircle.NumSides = 100
 fovCircle.Transparency = 1
@@ -35,18 +38,17 @@ local function createBox(color)
 	return box
 end
 
-
 local function createText(color, name)
 	local text = Drawing.new("Text")
 	text.Text = name
 	text.Color = color
-	text.Size = 10
+	text.Size = 15
 	text.Font = Drawing.Fonts.UI
-    text.Outlined = false
+	text.Outlined = false
 	text.Centered = true
 	text.Visible = false
-	text.Position = Vector2.new(0,0)
-    return text
+	text.Position = Vector2.new(0, 0)
+	return text
 end
 
 local function updateBoxes(box, distanceY, root2d)
@@ -57,9 +59,10 @@ local function updateBoxes(box, distanceY, root2d)
 	box.Visible = true
 end
 
-local function updateLabel(label,distanceY,root2d)
-    label.Position = Vector2.new(root2d.X,root2d.Y - distanceY * 4)
-    label.Visible = true
+local function updateLabel(label, distanceY, root2d)
+	local scaledOffset = math.clamp(distanceY * 3, 30, 100)
+	label.Position = Vector2.new(root2d.X, root2d.Y - scaledOffset)
+	label.Visible = true
 end
 
 -- Create a table that contains the boxes for each player
@@ -67,11 +70,11 @@ local function addPlayer(player)
 	if not currentPlayers[player] and player.Team ~= localPlayer.Team then
 		currentPlayers[player] = {
 			box = createBox(player.TeamColor.Color),
-            label = createText(player.TeamColor.Color, player.Name)
+			label = createText(player.TeamColor.Color, player.Name),
 		}
 	else
 		currentPlayers[player].box.Color = player.TeamColor.Color
-        currentPlayers[player].label.Color = player.TeamColor.Color
+		currentPlayers[player].label.Color = player.TeamColor.Color
 	end
 end
 
@@ -87,7 +90,7 @@ for _, v in Players:GetPlayers() do
 			addPlayer(v)
 		elseif currentPlayers[v] then
 			currentPlayers[v].box:Destroy()
-            currentPlayers[v].label:Destroy()
+			currentPlayers[v].label:Destroy()
 			currentPlayers[v] = nil
 		end
 	end)
@@ -104,7 +107,7 @@ Players.PlayerAdded:Connect(function(player)
 			addPlayer(player)
 		elseif currentPlayers[player] then
 			currentPlayers[player].box:Destroy()
-            currentPlayers[player].label:Destroy()
+			currentPlayers[player].label:Destroy()
 			currentPlayers[player] = nil
 		end
 	end)
@@ -118,7 +121,7 @@ end)
 Players.PlayerRemoving:Connect(function(player)
 	if currentPlayers[player] then
 		currentPlayers[player].box:Remove()
-        currentPlayers[player].label:Destroy()
+		currentPlayers[player].label:Destroy()
 		currentPlayers[player] = nil
 	end
 end)
@@ -129,7 +132,7 @@ localPlayer:GetPropertyChangedSignal("Team"):Connect(function()
 	for player, _ in currentPlayers do
 		if player.Team == localPlayer.Team then
 			currentPlayers[player].box:Destroy()
-            currentPlayers[player].label:Destroy()
+			currentPlayers[player].label:Destroy()
 			currentPlayers[player] = nil
 		end
 	end
@@ -143,6 +146,27 @@ localPlayer:GetPropertyChangedSignal("Team"):Connect(function()
 	end
 end)
 
+local lastTargetPos
+local function aimAt(target)
+	if aimbotConnection then
+        aimbotConnection:Disconnect()
+        aimbotConnection = nil
+    end
+	if target then
+		aimbotConnection = RunService.RenderStepped:Connect(function()
+            if isAimbotActive and target.Position ~= lastTargetPos then
+			    camera = workspace.CurrentCamera
+			    camera.CFrame = CFrame.new(camera.CFrame.Position,target.Position)
+				lastTargetPos = target.Position
+            else
+				aimbotConnection:Disconnect()
+                aimbotConnection = nil
+                target = nil
+            end
+		end)
+    end
+end
+
 -- Aimbot Functions
 local function getTarget()
 	local distance = math.huge
@@ -155,8 +179,10 @@ local function getTarget()
 			if head and humanoid and humanoid.Health > 0 then
 				local head2d, onscreen = camera:WorldToViewportPoint(head.Position)
 				if onscreen then
-					local mouse = UserInputService:GetMouseLocation()
-					local enemydistance = (Vector2.new(mouse.X, mouse.Y) - Vector2.new(head2d.X, head2d.Y)).Magnitude
+					local enemydistance = (Vector2.new(screenDimensions.X / 2, screenDimensions.Y / 2) - Vector2.new(
+						head2d.X,
+						head2d.Y
+					)).Magnitude
 					if enemydistance < distance and enemydistance <= fov then
 						target = head
 						distance = enemydistance
@@ -167,6 +193,27 @@ local function getTarget()
 	end
 	return target
 end
+
+RunService.RenderStepped:Connect(function()
+    if isAimbotActive then
+        local target = getTarget()
+        if target then
+            aimAt(target)
+        end
+    end
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if input.UserInputType == Enum.UserInputType.MouseButton2 and aimbotactive and not gameProcessed then
+		isAimbotActive = not isAimbotActive
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input, gameProcessed)
+	if input.UserInputType == Enum.UserInputType.MouseButton2 and aimbotactive and not gameProcessed then
+		isAimbotActive = false
+	end
+end)
 
 -- GUI
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
@@ -184,35 +231,34 @@ local Window = Rayfield:CreateWindow({
 local Tab1 = Window:CreateTab("Aimbot", "rewind")
 local Tab2 = Window:CreateTab("ESP", "rewind")
 
-local isAimbotActive = false
-
 -- Aimbot Toggle
 local Toggle = Tab1:CreateToggle({
 	Name = "Enable Aimbot",
 	CurrentValue = false,
 	Flag = "Aimbot1",
 	Callback = function(Value)
+		aimbotactive = Value
+	end,
+})
+
+local Toggle = Tab1:CreateToggle({
+	Name = "Enable HBE",
+	CurrentValue = false,
+	Flag = "HBE1",
+	Callback = function(Value)
 		if Value then
-			if not isAimbotActive then
-				isAimbotActive = true
-				spawn(function()
-					while isAimbotActive do
-						task.wait()
-						if UserInputService:IsKeyDown(Enum.KeyCode.J) then
-							local target = getTarget()
-							isLocked = true
-							if target then
-								local newCFrame = CFrame.new(camera.CFrame.Position, target.CFrame.Position)
-								camera.CFrame = newCFrame
-							end
-						else
-							isLocked = false
+			RunService.Heartbeat:Connect(function()
+				for i,v in currentPlayers do
+					if i.Character then
+						local character = i.Character
+						local head = character:FindFirstChild("Head")
+						if head then
+							head.Transparency = 0.8
+							head.Size = Vector3.new(3,3,3)
 						end
 					end
-				end)
-			end
-		elseif not Value then
-			isAimbotActive = false
+				end
+			end)
 		end
 	end,
 })
@@ -226,6 +272,7 @@ local Toggle = Tab2:CreateToggle({
 		if Value then
 			-- ESP Loop
 			espConnection = RunService.RenderStepped:Connect(function()
+				fovCircle.Position = Vector2.new(screenDimensions.X / 2, screenDimensions.Y / 2)
 				for player, data in currentPlayers do
 					if player and player.Character then
 						local character = player.Character
@@ -241,18 +288,18 @@ local Toggle = Tab2:CreateToggle({
 									math.huge
 								)
 								updateBoxes(data.box, distanceY, root2d)
-                                updateLabel(data.label, distanceY, root2d)
+								updateLabel(data.label, distanceY, root2d)
 							else
 								data.box.Visible = false
-                                data.label.Visible = false
+								data.label.Visible = false
 							end
 						else
 							data.box.Visible = false
-                            data.label.Visible = false
+							data.label.Visible = false
 						end
 					else
 						data.box.Visible = false
-                        data.label.Visible = false
+						data.label.Visible = false
 					end
 				end
 			end)
