@@ -4,15 +4,31 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local localPlayer = Players.LocalPlayer
-local currentPlayers = {}
-local fov = 100
-local espConnection = nil
-local fovCircle
 local camera = game.Workspace.CurrentCamera
 local screenDimensions = camera.ViewportSize
+
+-- ESP Variables
+local espConnection = nil
+local currentPlayers = {}
+local fovCircle
+local fov = 100
+
+-- Aimbot Variables
 local aimbotConnection = nil
 local isAimbotActive = false
 local aimbotactive = false
+local smoothness = 1
+
+-- HBE Variables
+local hbeActive = false
+
+-- Paths
+--local tanks = workspace:WaitForChild("Vehicles").Tanks
+
+-- Optimization Variables
+local lastUpdate = 0
+local lastUpdateInterval = 0.1
+local cachedTarget = nil
 
 fovCircle = Drawing.new("Circle")
 fovCircle.Color = Color3.new(1, 1, 1)
@@ -22,6 +38,22 @@ fovCircle.Transparency = 1
 fovCircle.Radius = fov
 fovCircle.Position = Vector2.new(screenDimensions.X / 2, screenDimensions.Y / 2)
 fovCircle.Visible = true
+
+local function findFirstChildRecursively(parent,name)
+	local child = parent:FindFirstChild(name) 
+	if child then
+		return child		
+	end
+
+	for _,v in parent:GetChildren() do
+		local found = findFirstChildRecursively(parent, name)
+		if found then
+			return found
+		end
+	end
+
+	return nil
+end
 
 -- ESP Functions
 local function createBox(color)
@@ -153,10 +185,11 @@ local function aimAt(target)
         aimbotConnection = nil
     end
 	if target then
-		aimbotConnection = RunService.RenderStepped:Connect(function()
+		aimbotConnection = RunService.RenderStepped:Connect(function(deltaTime)
             if isAimbotActive and target.Position ~= lastTargetPos then
 			    camera = workspace.CurrentCamera
-			    camera.CFrame = CFrame.new(camera.CFrame.Position,target.Position)
+			    local lookAtCFrame = CFrame.new(camera.CFrame.Position,target.Position)
+				camera.CFrame = lookAtCFrame
 				lastTargetPos = target.Position
             else
 				aimbotConnection:Disconnect()
@@ -169,6 +202,19 @@ end
 
 -- Aimbot Functions
 local function getTarget()
+	if cachedTarget and cachedTarget.Parent and cachedTarget:IsDescendantOf(workspace) then
+        local humanoid = cachedTarget.Parent:FindFirstChild("Humanoid")
+        if humanoid and humanoid.Health > 0 then
+            return cachedTarget
+        end
+    end
+
+	if os.clock() - lastUpdate < lastUpdateInterval then
+		return cachedTarget
+	end
+
+	lastUpdate = os.clock()
+
 	local distance = math.huge
 	local target = nil
 	for _, v in Players:GetPlayers() do
@@ -191,7 +237,8 @@ local function getTarget()
 			end
 		end
 	end
-	return target
+	cachedTarget = target
+	return cachedTarget
 end
 
 RunService.RenderStepped:Connect(function()
@@ -212,6 +259,7 @@ end)
 UserInputService.InputEnded:Connect(function(input, gameProcessed)
 	if input.UserInputType == Enum.UserInputType.MouseButton2 and aimbotactive and not gameProcessed then
 		isAimbotActive = false
+		cachedTarget = nil
 	end
 end)
 
@@ -227,6 +275,32 @@ local Window = Rayfield:CreateWindow({
 	DisableBuildWarnings = false,
 })
 
+RunService.Heartbeat:Connect(function()
+	if hbeActive then
+		for i,v in currentPlayers do
+			if i.Character then
+				local character = i.Character
+				local head = character:FindFirstChild("Head")
+				if head then
+					head.Transparency = 0.8
+					head.Size = Vector3.new(3,3,3)
+				end
+			end
+		end
+	else
+		for i,v in currentPlayers do
+			if i.Character then
+				local character = i.Character
+				local head = character:FindFirstChild("Head")
+				if head then
+					head.Transparency = 1
+					head.Size = Vector3.new(0,0,0)
+				end
+			end
+		end
+	end
+end)
+
 -- Tabs
 local Tab1 = Window:CreateTab("Aimbot", "rewind")
 local Tab2 = Window:CreateTab("ESP", "rewind")
@@ -241,25 +315,25 @@ local Toggle = Tab1:CreateToggle({
 	end,
 })
 
+-- Smoothness
+local Slider = Tab1:CreateSlider({
+	Name = "Smoothness",
+	Range = {0, 1},
+	Increment = 0.01,
+	Suffix = "",
+	CurrentValue = 1,
+	Flag = "Slider1",
+	Callback = function(Value)
+		smoothness = Value
+	end,
+ })
+
 local Toggle = Tab1:CreateToggle({
 	Name = "Enable HBE",
 	CurrentValue = false,
 	Flag = "HBE1",
 	Callback = function(Value)
-		if Value then
-			RunService.Heartbeat:Connect(function()
-				for i,v in currentPlayers do
-					if i.Character then
-						local character = i.Character
-						local head = character:FindFirstChild("Head")
-						if head then
-							head.Transparency = 0.8
-							head.Size = Vector3.new(3,3,3)
-						end
-					end
-				end
-			end)
-		end
+		hbeActive = Value
 	end,
 })
 
