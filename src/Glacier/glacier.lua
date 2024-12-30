@@ -178,25 +178,52 @@ localPlayer:GetPropertyChangedSignal("Team"):Connect(function()
 	end
 end)
 
-local lastTargetPos
+local lastTargetPos = nil
+local lastCFrame = nil
+local mouseDelta = Vector2.new(0, 0)
+
+-- Capture mouse movement
+UserInputService.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        mouseDelta = input.Delta
+    end
+end)
+
 local function aimAt(target)
-	if aimbotConnection then
+    if aimbotConnection then
         aimbotConnection:Disconnect()
         aimbotConnection = nil
     end
-	if target then
-		aimbotConnection = RunService.RenderStepped:Connect(function(deltaTime)
-            if isAimbotActive and target.Position ~= lastTargetPos then
-			    camera = workspace.CurrentCamera
-			    local lookAtCFrame = CFrame.new(camera.CFrame.Position,target.Position)
-				camera.CFrame = lookAtCFrame
+
+    if target then
+        aimbotConnection = RunService.RenderStepped:Connect(function()
+            if isAimbotActive and target:IsDescendantOf(workspace) and lastTargetPos ~= target.Position then
+                camera = workspace.CurrentCamera
+                local lookAtCFrame = CFrame.new(camera.CFrame.Position, target.Position)
+                if smoothness < 1 then
+                    local mouseAdjustment = CFrame.Angles(
+                        math.rad(-mouseDelta.Y * 0.2), 
+                        math.rad(-mouseDelta.X * 0.2),
+                        0
+                    )
+                    if not lastCFrame then
+                        lastCFrame = camera.CFrame
+                    end
+                    local adjustedCFrame = lastCFrame * mouseAdjustment
+                    lastCFrame = adjustedCFrame:Lerp(lookAtCFrame, smoothness)
+                    camera.CFrame = lastCFrame
+                    mouseDelta = Vector2.new(0, 0)
+                else
+                    camera.CFrame = lookAtCFrame
+                end
 				lastTargetPos = target.Position
             else
-				aimbotConnection:Disconnect()
+                aimbotConnection:Disconnect()
                 aimbotConnection = nil
                 target = nil
+                lastCFrame = nil
             end
-		end)
+        end)
     end
 end
 
