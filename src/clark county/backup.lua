@@ -1,13 +1,13 @@
 local actor = nil
 for i, act in getactors() do
-	if act:FindFirstChild("CoreClient") then
-		actor = act
-	end
+    if act:FindFirstChild("CoreClient") then
+        actor = act
+    end
 end
 
 run_on_actor(
-	actor,
-	[[
+    actor,
+    [[
 -- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -16,17 +16,14 @@ local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 local camera = game.Workspace.CurrentCamera
 local marmotsPath = workspace.Marmots
-local DEBUG = false
 math.randomseed(os.time())
 
 -- ESP Variables
-local espToggle = false
+local espConnection = nil
 local currentPlayers = {}
 local fovCircle
 local fov = 100
 local showMarmots = false
-local showDealers = false
-local showDealerships = false
 local marmots = {}
 
 -- Aimbot Variables
@@ -101,20 +98,9 @@ local function createText(color, name)
     text.Outlined = false
     text.Centered = true
     text.Visible = false
-    text.Position = Vector2.new(0,0)
+    text.Position = Vector2.new(0, 0)
     return text
 end
-
-local dealers = {
-    [Vector3.new(-116.526611328125, 190.7767791748047, -2117.9501953125)] = createText(Color3.new(1, 0.843, 0),"Denver (Illegal Guns)"),
-    [Vector3.new(-110.91162109375, 202.0384521484375, -2155.40771484375)] = createText(Color3.new(1, 0.843, 0),"Mite (Thermite)"),
-    [Vector3.new(816.475830078125, 197.17501831054688, 2814.609130859375)] = createText(Color3.new(1, 0.843, 0),"Kuz (Picklocks)"),
-    [Vector3.new(-2031.06787109375, 190.55502319335938, 154.6298065185547)] = createText(Color3.new(1, 0.843, 0),"Yerida (Sell bars)")
-}
-
-local dealerships = {
-
-}
 
 local indicator = createText(Color3.new(1, 0.843, 0),"")
 
@@ -186,11 +172,7 @@ local function getTarget()
     local target = nil
 	local rootPart = nil
 	local headPart = nil
-    local rootVisible = false
-    local headVisible = false
     local player = nil
-    local visible = false
-    local isGlass = false
     for _, v in Players:GetPlayers() do
         if v.Character and v ~= localPlayer then
             local character = v.Character
@@ -213,37 +195,11 @@ local function getTarget()
             end
         end
     end
-
-    if target and headPart and rootPart then
-        table.insert(filter,headPart.Parent)
-        raycastParams.FilterDescendantsInstances = filter
-        local origin = localPlayer.Character:FindFirstChild("Torso").Position + Vector3.new(0,1.5,0,0)
-        local rootRay = workspace:Raycast(origin,rootPart.Position - origin, raycastParams)
-        if not rootRay then 
-            rootVisible = true 
-        elseif rootRay.Instance.Name == "Glass" then
-            isGlass = true
-        end
-        local headRay = workspace:Raycast(origin,headPart.Position - origin,raycastParams)
-        if DEBUG and headRay then
-            print("RAY HIT WITH THE FOLLOWING PARAMETERS:")
-            print("Hit Instance Name:", headRay.Instance.Name)
-            print("Hit Position:", headRay.Position)
-            print("Surface Normal:", headRay.Normal)
-            print("Material:", headRay.Material)
-            print()
-        end
-        if not headRay then 
-            headVisible = true 
-        elseif headRay.Instance.Name == "Glass" then
-            isGlass = true
-        end
-    end
-    if indicatorToggle and indicator and player then
-        indicator.Text = "DETECTED: "..player.Name .. "\nHEAD VISIBLE: " .. tostring(headVisible) .. "\nROOT VISIBLE: " .. tostring(headVisible)
+    if indictatorToggle and indicator and player then
+        indicator.Text = "DETECTED ENEMY "..player.Name
         indicator.Visible = true
     end
-    return target, rootPart, headPart, rootVisible, headVisible, isGlass, rootRay, headRay
+    return target, rootPart, headPart
 end
 
 local raycastFunction = nil
@@ -253,6 +209,15 @@ for i, v in getgc(true) do
     end
 end
 
+--local old
+--old = hookfunction(raycastFunction, newcclosure(function(inst, origin, dest, params, limit, ...)
+  --  if ptarget then
+    --    local aimDirection = (ptarget.Position - origin).Unit * 10000
+      --  return old(inst, origin, aimDirection, params, limit, ...)
+    --end
+    --return old(inst, origin, dest, params, limit, ...)
+--end))
+
 local old
 old = hookfunction(raycastFunction, newcclosure(function(inst, origin, dest, params, limit, ...)
 
@@ -261,15 +226,7 @@ old = hookfunction(raycastFunction, newcclosure(function(inst, origin, dest, par
     end
 
     if ptarget then
-		local rootPart, headPart, bodyShotChance, headShotChance, wallcheck, rootVisible, headVisible,isGlass,rootRay,headRay = unpack(ptarget)
-        if isGlass then
-            if rootRay then
-                return rootRay.Instance, rootRay.Position, rootRay.Normal, rootRay.Material
-            end
-            if headRay then
-                return headRay.Instance, headRay.Position, headRay.Normal, headRay.Material
-            end
-        end
+		local rootPart, headPart, bodyShotChance, headShotChance, wallcheck, raycastParams, filter = unpack(ptarget)
 		local fakeInstance = nil
 		local fakePosition = nil
 		if chance(bodyShotChance) then
@@ -284,10 +241,10 @@ old = hookfunction(raycastFunction, newcclosure(function(inst, origin, dest, par
         local fakeNormal = Vector3.new(0, 1, 0) 
         local fakeMaterial = nil
         if wallcheck then
-            if fakeInstance == rootPart and not rootVisible then
-                return old(inst, origin, dest, params, limit, ...)
-            elseif fakeInstance == headPart and not headVisible then
-                return old(inst, origin, dest, params, limit, ...)
+            table.insert(filter,fakeInstance.Parent)
+            local result = workspace:Raycast(origin,(origin - fakePosition).Unit * limit, raycastParams)
+            if result then
+                return old(inst,origin,dest,params,limit, ...)
             end
         end
         return fakeInstance, fakePosition, fakeNormal, fakeMaterial
@@ -296,93 +253,11 @@ old = hookfunction(raycastFunction, newcclosure(function(inst, origin, dest, par
 end))
 
 RunService.RenderStepped:Connect(function()
-    if indicatorToggle then
-        local mousePos = UserInputService:GetMouseLocation()
-        indicator.Position = Vector2.new(mousePos.X,mousePos.Y + 15)
-    end
-    if espToggle then
-	    fovCircle.Position = UserInputService:GetMouseLocation()
-        if not fovCircle.Visible then fovCircle.Visible = true end
-	    if showMarmots then
-		    updateMarmots()
-		    for marmot,text in marmots do
-			    local touchPart = marmot:FindFirstChild("TouchPart")
-			    if touchPart then
-				    local pos2d, onscreen = camera:WorldToViewportPoint(touchPart.CFrame.Position)
-				    if pos2d and onscreen then
-					    text.Position = Vector2.new(pos2d.X,pos2d.Y)
-					    text.Visible = true
-				    else
-					    text.Visible = false
-			        end
-                else
-                    text.Visible = false
-			    end
-		    end
-	    end
-        if showDealers then
-            for pos,text in dealers do
-                local pos2d, onscreen = camera:WorldToViewportPoint(pos)
-                if pos2d and onscreen then
-                    text.Position = Vector2.new(pos2d.X,pos2d.Y)
-                    text.Visible = true
-                else
-                    text.Visible = false
-                end
-            end
-        end
-        if showDealerships then
-            for pos,text in dealerships do
-                local pos2d, onscreen = camera:WorldToViewportPoint(pos)
-                if pos2d and onscreen then
-                    text.Position = Vector2.new(pos2d.X,pos2d.Y)
-                    text.Visible = true
-                else
-                    text.Visible = false
-                end
-            end
-        end
-        for player, data in currentPlayers do
-            if player and player.Character then
-                local character = player.Character
-                local root = character:FindFirstChild("HumanoidRootPart")
-                local head = character:FindFirstChild("Head")
-                if root and head then
-                    local root2d, onscreen = camera:WorldToViewportPoint(root.Position)
-                    if onscreen and root2d.Z > 0 then
-                        local head2d = camera:WorldToViewportPoint(head.Position)
-                        local distanceY = math.clamp(
-                            (Vector2.new(head2d.X, head2d.Y) - Vector2.new(root2d.X, root2d.Y)).Magnitude,
-                            2,
-                            math.huge
-                            )
-                            updateBoxes(data.box, distanceY, root2d)
-                            updateLabel(data.label, distanceY, root2d)
-                    else
-                        data.box.Visible = false
-                        data.label.Visible = false
-                    end
-                else
-                    data.box.Visible = false
-                    data.label.Visible = false
-                end
-            else
-                data.box.Visible = false
-                data.label.Visible = false
-            end
-        end
-    end
-end)
-
-RunService.RenderStepped:Connect(function()
-    if isAimbotActive or autoSilentAim then
-        local target,rootPart,headPart,rootVisible,headVisible,isGlass,rootRay,headRay = getTarget()
-        isLocked = true
+    if isAimbotActive then
+        local target,rootPart,headPart = getTarget()
         if target and rootPart and headPart then
-	        ptarget = {rootPart,headPart,bodyShotChance,headShotChance, wallcheck,rootVisible,headVisible,isGlass,rootRay,headRay}
-        else
-            ptarget = nil
-            indicator.Visible = false
+            isLocked = true
+			ptarget = {rootPart,headPart,bodyShotChance,headShotChance, wallcheck, raycastParams, filter}
         end
     end
 end)
@@ -402,8 +277,7 @@ local Window = Rayfield:CreateWindow({
 -- Tabs
 local Tab1 = Window:CreateTab("Aim", "rewind")
 local Tab2 = Window:CreateTab("ESP", "rewind")
-local Tab3 = Window:CreateTab("Aim Custom Rules", "rewind")
-local Tab4 = Window:CreateTab("Keybinds", "rewind")
+local Tab3 = Window:CreateTab("Keybinds", "rewind")
 
 -- Aimbot Toggle
 local Toggle = Tab1:CreateToggle({
@@ -498,15 +372,72 @@ local Toggle = Tab2:CreateToggle({
     CurrentValue = false,
     Flag = "ESP1",
     Callback = function(Value)
-        espToggle = Value
-        if not Value then
+        if Value then
+            espConnection = RunService.RenderStepped:Connect(function()
+				fovCircle.Position = UserInputService:GetMouseLocation()
+                if not fovCircle.Visible then fovCircle.Visible = true end
+				if showMarmots then
+					updateMarmots()
+					for marmot,text in marmots do
+						local touchPart = marmot:FindFirstChild("TouchPart")
+						if touchPart then
+							local pos2d, onscreen = camera:WorldToViewportPoint(touchPart.CFrame.Position)
+							if pos2d and onscreen then
+								text.Position = Vector2.new(pos2d.X,pos2d.Y)
+								text.Visible = true
+							else
+								text.Visible = false
+							end
+                        else
+                            text.Visible = false
+						end
+					end
+				else
+					for marmot,text in marmots do
+						text.Visible = false
+					end
+				end
+                for player, data in currentPlayers do
+                    if player and player.Character then
+                        local character = player.Character
+                        local root = character:FindFirstChild("HumanoidRootPart")
+                        local head = character:FindFirstChild("Head")
+                        if root and head then
+                            local root2d, onscreen = camera:WorldToViewportPoint(root.Position)
+                            if onscreen and root2d.Z > 0 then
+                                local head2d = camera:WorldToViewportPoint(head.Position)
+                                local distanceY = math.clamp(
+                                    (Vector2.new(head2d.X, head2d.Y) - Vector2.new(root2d.X, root2d.Y)).Magnitude,
+                                    2,
+                                    math.huge
+                                )
+                                updateBoxes(data.box, distanceY, root2d)
+                                updateLabel(data.label, distanceY, root2d)
+                            else
+                                data.box.Visible = false
+                                data.label.Visible = false
+                            end
+                        else
+                            data.box.Visible = false
+                            data.label.Visible = false
+                        end
+                    else
+                        data.box.Visible = false
+                        data.label.Visible = false
+                    end
+                end
+            end)
+        else
+            if espConnection then
+                espConnection:Disconnect()
+                espConnection = nil
+            end
+
             for i, v in currentPlayers do
                 if currentPlayers[i] then
                     currentPlayers[i].box.Visible = false
-                    currentPlayers[i].label.Visible = false
                 end
             end
-            fovCircle.Visible = false
         end
     end,
 })
@@ -518,45 +449,10 @@ local Toggle = Tab2:CreateToggle({
     Flag = "ESP2",
     Callback = function(Value)
         showMarmots = Value
-        if not Value then
-            for marmot,text in marmots do
-			    text.Visible = false
-		    end
-        end
     end,
 })
 
--- Show Dealers Toggle
-local Toggle = Tab2:CreateToggle({
-    Name = "Show Dealers",
-    CurrentValue = false,
-    Flag = "ESP3",
-    Callback = function(Value)
-        showDealerships = Value
-        if not Value then
-            for _,text in dealerships do
-			    text.Visible = false
-		    end
-        end
-    end,
-})
-
--- Show Dealerships Toggle
-local Toggle = Tab2:CreateToggle({
-    Name = "Show Car Dealerships",
-    CurrentValue = false,
-    Flag = "ESP3",
-    Callback = function(Value)
-        showdealerships = Value
-        if not Value then
-            for _,text in dealers do
-			    text.Visible = false
-		    end
-        end
-    end,
-})
-
-local Keybind = Tab4:CreateKeybind({
+local Keybind = Tab3:CreateKeybind({
    Name = "Silent Aim Keybind",
    CurrentKeybind = "F",
    HoldToInteract = true,
